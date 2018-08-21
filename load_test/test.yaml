@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: es-loadtest
+  spec:
+    finalizers:
+    - kubernetes
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: loadtest-bulk
+    namespace: es-loadtest
+  spec:
+    parallelism: 100
+    template:
+      metadata:
+        labels:
+          run: loadtest-bulk
+      spec:
+        containers:
+        - name: test
+          image: docker.io/wozniakjan/alpine_with_bash_and_curl
+          imagePullPolicy: Always
+          command: ["/insert.bash"]
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: QUERY_COUNT
+            value: "10000"
+          - name: INDEX
+            value: loadtest-bulk
+          - name: JSON_FIELD_COUNT
+            value: "50"
+          - name: BULK_SIZE
+            value: "50"
+        restartPolicy: Never
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: loadtest-index
+    namespace: es-loadtest
+  spec:
+    parallelism: 500
+    template:
+      metadata:
+        labels:
+          run: loadtest-index
+      spec:
+        containers:
+        - name: test
+          image: docker.io/wozniakjan/alpine_with_bash_and_curl
+          imagePullPolicy: Always
+          command: ["/insert.bash"]
+          env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: QUERY_COUNT
+            value: "10000"
+          - name: INDEX
+            value: loadtest-index
+          - name: JSON_FIELD_COUNT
+            value: "50"
+        restartPolicy: Never
